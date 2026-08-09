@@ -35,7 +35,7 @@
 
   <!-- 2. منطق التطبيق والجافاسكريبت -->
   <script>
-    // أسماء الوسطاء الأربعة المطلوبة
+    // أسماء الوسطاء الأربعة
     const brokersList = [
       "WEGO",
       "MANOUSHA",
@@ -43,7 +43,7 @@
       "NOUSHA"
     ];
 
-    // تعبئة قائمة الوسطاء تلقائياً فور فتح الصفحة
+    // تعبئة قائمة الوسطاء تلقائياً عند تحميل الصفحة
     window.onload = function() {
       let brokerSelect = document.getElementById("pB");
       brokersList.forEach(broker => {
@@ -54,7 +54,7 @@
       });
     };
 
-    // إعدادات Firebase الخاصة بمشروعك
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
       apiKey: "AIzaSyDotzID3j-wEOMKFurcsrjVkaZ5Z-1jkhE",
       authDomain: "account-database-86907.firebaseapp.com",
@@ -86,18 +86,43 @@
             ? `<img src="${product.image}" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">` 
             : "";
 
+          // إضافة زر الشراء داخل كل كارت
           contain.innerHTML += `
-            <div class="contain-item" style="margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff;">
+            <div class="contain-item" style="margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">
               ${imageTag}
-              <h2 style="margin: 5px 0;">${product.name}</h2>
+              <h2 style="margin: 5px 0; word-break: break-word;">${product.name}</h2>
               <p style="margin: 3px 0;">Support Number: <strong>${product.support}</strong></p>
               <p style="margin: 3px 0; color: green; font-weight: bold;">Price: ${product.price} L.E</p>
               <p style="margin: 3px 0; color: #555;">Broker: <strong>${product.broker || 'No Broker Selected'}</strong></p>
+              
+              <!-- 👈 زر الشراء الجديد -->
+              <button onclick="buyProduct('${product.broker}')" style="margin-top: 8px; padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;">
+                شراء الحساب (Buy Now)
+              </button>
             </div>
           `;
         });
       }
     });
+
+    // 👈 دالة الشراء التي تفحص اسم الوسيط وتظهر أرقامه الرسمية
+    function buyProduct(broker) {
+      if (broker === "WEGO") {
+        alert("⚠️ تنبيه للأمان: تأكد من التواصل مع الوسيط WEGO على أرقامه الأساسية فقط للوقاية من النصابين:\n\nالرقم الأول: 01000000001\nالرقم الثاني: 01100000001");
+      } 
+      else if (broker === "MANOUSHA") {
+        alert("⚠️ تنبيه للأمان: تأكد من التواصل مع الوسيط MANOUSHA على أرقامه الأساسية فقط للوقاية من النصابين:\n\nالرقم الأول: 01000000002\nالرقم الثاني: 01100000002");
+      } 
+      else if (broker === "TUBBAH") {
+        alert("⚠️ تنبيه للأمان: تأكد من التواصل مع الوسيط TUBBAH على أرقامه الأساسية فقط للوقاية من النصابين:\n\nالرقم الأول: 01000000003\nالرقم الثاني: 01100000003");
+      } 
+      else if (broker === "NOUSHA") {
+        alert("⚠️ تنبيه للأمان: تأكد من التواصل مع الوسيط NOUSHA على أرقامه الأساسية فقط للوقاية من النصابين:\n\nالرقم الأول: 01000000004\nالرقم الثاني: 01100000004");
+      } 
+      else {
+        alert("لم يتم تحديد وسيط معتمد لهذا المنتج!");
+      }
+    }
 
     // دالة النشر
     function PuplishProduct() {
@@ -126,12 +151,10 @@
         return;
       }
 
-      // تغيير حالة الزر لتنبيك المستخدم أثناء المعالجة
       btn.innerText = "Publishing... (جاري النشر)";
       btn.disabled = true;
 
       if (pI) {
-        // ضغط حجم الصورة قبل الرفع لسرعة الاستجابة
         compressAndConvertImage(pI, function(compressedBase64) {
           saveToFirebase(pN, pS, pP, pB, compressedBase64, publishData);
         });
@@ -140,7 +163,7 @@
       }
     }
 
-    // دالة تصغير ضغط الصورة
+    // دالة ضغط الصور
     function compressAndConvertImage(file, callback) {
       let reader = new FileReader();
       reader.readAsDataURL(file);
