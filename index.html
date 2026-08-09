@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products Store</title>
+</head>
+<body style="align-items: center; justify-content: center; flex-direction: column; display: flex; font-family: Arial, sans-serif;">
+
+  <!-- واجهة إضافة المنتجات -->
+  <div class="main-header" style="background-color: aliceblue; width: 450px; text-align: center; padding: 20px; border-radius: 8px; margin-top: 20px;">
+    <h1>Publish Your Product</h1>
+    <p>Any One can see it easily</p>
+    
+    <input type="text" id="pN" placeholder="Enter your product name" style="margin: 5px; padding: 8px; width: 80%;"><br>
+    <input type="number" id="pS" placeholder="Enter your Support Number" style="margin: 5px; padding: 8px; width: 80%;"><br>
+    <input type="number" id="pP" placeholder="Enter your Account Price (LE)" style="margin: 5px; padding: 8px; width: 80%;"><br>
+    
+    <!-- قائمة الوسطاء المحددة -->
+    <select id="pB" style="margin: 5px; padding: 8px; width: 84%;">
+      <option value="">-- Choose a Broker (اختر الوسيط) --</option>
+    </select><br>
+
+    <p style="margin-bottom: 2px;">Image:</p>
+    <input type="file" id="pI" accept="image/*" style="margin: 5px;"><br>
+    <button onclick="PuplishProduct()" id="PuplishButton" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px;">Publish</button>
+  </div>
+
+  <h2>Published Items</h2>
+  <div id="contain" style="margin: 6px; gap: 20px; width: 450px;"></div>
+
+  <!-- 1. استدعاء مكتبات Firebase السحابية -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- 2. منطق التطبيق والجافاسكريبت -->
+  <script>
+    // أسماء الوسطاء الأربعة المطلوبة
+    const brokersList = [
+      "WEGO",
+      "MANOUSHA",
+      "TUBBAH",
+      "NOUSHA"
+    ];
+
+    // تعبئة قائمة الوسطاء تلقائياً فور فتح الصفحة
+    window.onload = function() {
+      let brokerSelect = document.getElementById("pB");
+      brokersList.forEach(broker => {
+        let option = document.createElement("option");
+        option.value = broker;
+        option.textContent = broker;
+        brokerSelect.appendChild(option);
+      });
+    };
+
+    // إعدادات Firebase الخاصة بمشروعك
+    const firebaseConfig = {
+      apiKey: "AIzaSyDotzID3j-wEOMKFurcsrjVkaZ5Z-1jkhE",
+      authDomain: "account-database-86907.firebaseapp.com",
+      databaseURL: "https://account-database-86907-default-rtdb.firebaseio.com",
+      projectId: "account-database-86907",
+      storageBucket: "account-database-86907.firebasestorage.app",
+      messagingSenderId: "388783094170",
+      appId: "1:388783094170:web:656e7c5c85f3e80311e223",
+      measurementId: "G-8GWYD5NJRM"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const productsRef = database.ref("products");
+
+    // عرض المنتجات للجميع لحظياً
+    productsRef.on("value", (snapshot) => {
+      let contain = document.getElementById("contain");
+      if (!contain) return;
+      
+      contain.innerHTML = "";
+      const data = snapshot.val();
+
+      if (data) {
+        Object.keys(data).forEach((key) => {
+          let product = data[key];
+          
+          let imageTag = product.image 
+            ? `<img src="${product.image}" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">` 
+            : "";
+
+          contain.innerHTML += `
+            <div class="contain-item" style="margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff;">
+              ${imageTag}
+              <h2 style="margin: 5px 0;">${product.name}</h2>
+              <p style="margin: 3px 0;">Support Number: <strong>${product.support}</strong></p>
+              <p style="margin: 3px 0; color: green; font-weight: bold;">Price: ${product.price} L.E</p>
+              <p style="margin: 3px 0; color: #555;">Broker: <strong>${product.broker || 'No Broker Selected'}</strong></p>
+            </div>
+          `;
+        });
+      }
+    });
+
+    // دالة النشر
+    function PuplishProduct() {
+      let pN = document.getElementById("pN").value.trim();
+      let pS = document.getElementById("pS").value.trim();
+      let pP = document.getElementById("pP").value.trim();
+      let pB = document.getElementById("pB").value;
+      let pI = document.getElementById("pI").files[0];
+      let btn = document.getElementById("PuplishButton");
+
+      if (pN === "" || pS === "" || pP === "" || pB === "") {
+        alert("Please fill all details and select a Broker!");
+        return;
+      }
+
+      // فحص حد النشر اليومي (6 منتجات)
+      const today = new Date().toISOString().slice(0, 10);
+      let publishData = JSON.parse(localStorage.getItem("userPublishData")) || { date: today, count: 0 };
+
+      if (publishData.date !== today) {
+        publishData = { date: today, count: 0 };
+      }
+
+      if (publishData.count >= 6) {
+        alert("لقد وصلت للحد الأقصى للنشر اليوم (6 منتجات فقط). يمكنك النشر مجدداً غداً!");
+        return;
+      }
+
+      // تغيير حالة الزر لتنبيك المستخدم أثناء المعالجة
+      btn.innerText = "Publishing... (جاري النشر)";
+      btn.disabled = true;
+
+      if (pI) {
+        // ضغط حجم الصورة قبل الرفع لسرعة الاستجابة
+        compressAndConvertImage(pI, function(compressedBase64) {
+          saveToFirebase(pN, pS, pP, pB, compressedBase64, publishData);
+        });
+      } else {
+        saveToFirebase(pN, pS, pP, pB, "", publishData);
+      }
+    }
+
+    // دالة تصغير ضغط الصورة
+    function compressAndConvertImage(file, callback) {
+      let reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function (e) {
+        let img = new Image();
+        img.src = e.target.result;
+        img.onload = function () {
+          let canvas = document.createElement("canvas");
+          let maxWidth = 500;
+          let scaleSize = maxWidth / img.width;
+          
+          canvas.width = (img.width > maxWidth) ? maxWidth : img.width;
+          canvas.height = (img.width > maxWidth) ? (img.height * scaleSize) : img.height;
+
+          let ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+          callback(compressedDataUrl);
+        };
+      };
+    }
+
+    // دالة الحفظ أونلاين
+    function saveToFirebase(name, support, price, broker, image, publishData) {
+      let btn = document.getElementById("PuplishButton");
+
+      productsRef.push({
+        name: name,
+        support: support,
+        price: price,
+        broker: broker,
+        image: image,
+        createdAt: Date.now()
+      }).then(() => {
+        publishData.count += 1;
+        localStorage.setItem("userPublishData", JSON.stringify(publishData));
+
+        document.getElementById("pN").value = "";
+        document.getElementById("pS").value = "";
+        document.getElementById("pP").value = "";
+        document.getElementById("pB").value = "";
+        document.getElementById("pI").value = "";
+
+        btn.innerText = "Publish";
+        btn.disabled = false;
+
+        alert(`تم نشر المنتج بنجاح! متبقي لك اليوم: ${6 - publishData.count} منتجات.`);
+      }).catch((error) => {
+        btn.innerText = "Publish";
+        btn.disabled = false;
+        alert("Error saving product: " + error.message);
+      });
+    }
+  </script>
+</body>
+</html>
